@@ -7,6 +7,7 @@ import categoryRouter from './routes/category.js'
 import { v2 } from 'cloudinary';
 dotenv.config()
 
+
 // database
 connectDb()
 const PORT =process.env.PORT || 8000 

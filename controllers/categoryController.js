@@ -1,12 +1,13 @@
 import Category from "../models/category.js";
-import cloudinary from 'cloudinary'
+import cloudinary from "cloudinary";
 import fs from "fs/promises";
+
 const createCategory = async (req, res) => {
   const { name } = req.body;
 
   try {
     if (!name) {
-     return res.status(400).json({ message: "All fields are required" });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
     const categoryExist = await Category.findOne({ name });
@@ -24,10 +25,11 @@ const createCategory = async (req, res) => {
       },
     });
 
-    if (!category){
-        return res.status(400).json({ message: "Category create to failed ,  please try again" });
+    if (!category) {
+      return res
+        .status(400)
+        .json({ message: "Category create to failed ,  please try again" });
     }
-  
 
     if (req.file) {
       try {
@@ -35,7 +37,7 @@ const createCategory = async (req, res) => {
           folder: "shreejishoesandmansware",
           width: 250,
           height: 250,
-        //   gravity: "faces",
+          //   gravity: "faces",
           crop: "fill",
         });
         if (result) {
@@ -45,7 +47,7 @@ const createCategory = async (req, res) => {
           fs.rm(`uploads/${req.file.filename}`);
         }
       } catch (error) {
-         return res.status(400).json({
+        return res.status(400).json({
           message: error.message || "File not uploaded, please try again",
         });
       }
@@ -58,10 +60,42 @@ const createCategory = async (req, res) => {
       category,
     });
   } catch (error) {
-   return res
+    return res
       .status(500)
       .json({ message: error.message || "create category error!!" });
   }
 };
 
-export { createCategory };
+const getCategory = async (req, res) => {
+  const search = req.query.q; // Remove leading/trailing whitespace
+  console.log("Search term:", search);
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+
+  try {
+    let query = {};
+    if (search) {
+      query = {
+        $or: [{ name: { $regex: search, $options: "i" } }],
+      };
+    }
+    const skip = (page - 1) * limit;
+    const category = await Category.find(query).skip(skip).limit(limit);
+
+    if (category.length === 0) {
+      return res.status(404).json({ message: "No matching categories found." });
+    }
+
+    res.status(200).json({
+      data: category,
+      currentPage: page,
+      totalPages: Math.ceil(category.length / limit),
+      totalItems: category.length,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Find category error!!" });
+  }
+};
+
+export { createCategory, getCategory };
